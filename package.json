@@ -1,0 +1,17 @@
+{
+  "name": "last-shield-server",
+  "version": "1.0.0",
+  "description": "Мультиплеерный сервер для игры ПОСЛЕДНИЙ ЩИТ",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "socket.io": "^4.8.3"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "author": "",
+  "license": "ISC"
+}
