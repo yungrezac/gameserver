@@ -57,7 +57,7 @@ io.on("connection", (socket) => {
     }
   });
 
-  socket.on("start_battle", () => {
+  socket.on("start_battle", (options) => {
     const room = rooms[socket.roomId];
     if (!room || room.hostPlayerId !== socket.playerId) return;
     
@@ -68,18 +68,23 @@ io.on("connection", (socket) => {
         p.alive = true; 
     });
     
-    room.phase = "countdown";
-    const COUNTDOWN_TIME = 10000; // 10 секунд обратного отсчета
-    room.countdownUntil = Date.now() + COUNTDOWN_TIME; 
-    io.to(socket.roomId).emit("room_snapshot", room);
+    if (options && options.immediate) {
+        room.phase = "playing";
+        io.to(socket.roomId).emit("room_snapshot", room);
+    } else {
+        room.phase = "countdown";
+        const COUNTDOWN_TIME = 10000; // 10 секунд обратного отсчета
+        room.countdownUntil = Date.now() + COUNTDOWN_TIME; 
+        io.to(socket.roomId).emit("room_snapshot", room);
 
-    // Автоматический перевод в активную фазу
-    setTimeout(() => {
-      if (rooms[socket.roomId]?.phase === "countdown") {
-        rooms[socket.roomId].phase = "playing";
-        io.to(socket.roomId).emit("room_snapshot", rooms[socket.roomId]);
-      }
-    }, COUNTDOWN_TIME);
+        // Автоматический перевод в активную фазу
+        setTimeout(() => {
+          if (rooms[socket.roomId]?.phase === "countdown") {
+            rooms[socket.roomId].phase = "playing";
+            io.to(socket.roomId).emit("room_snapshot", rooms[socket.roomId]);
+          }
+        }, COUNTDOWN_TIME);
+    }
   });
 
   socket.on("reset_battle", () => {
