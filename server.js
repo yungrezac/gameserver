@@ -99,16 +99,21 @@ io.on("connection", (socket) => {
     if (!room || room.phase !== "playing") return;
 
     const trigger = room.rules.triggers.find(t => t.giftIds.includes(payload.giftId));
-    if (!trigger) return;
+    
+    // --- ИЗМЕНЕНИЕ: Если подарка нет в триггерах, по умолчанию это УРОН на сумму его монет ---
+    let eventType = trigger ? trigger.action : "damage";
+    let amount = trigger ? (trigger.amount * payload.count) : payload.totalCoins;
+
+    // Игнорируем бесплатные лайки/подарки стоимостью 0 монет, если они не заданы в триггерах
+    if (amount <= 0 && !trigger) return;
 
     const targetIds = [];
-    let eventType = trigger.action;
     const senderId = socket.playerId;
     const opponent = Object.values(room.players).find(p => p.playerId !== senderId);
 
     // Логика урона и победы
-    if (trigger.action === "damage" && opponent) {
-      opponent.hp = Math.max(0, opponent.hp - (trigger.amount * payload.count));
+    if (eventType === "damage" && opponent) {
+      opponent.hp = Math.max(0, opponent.hp - amount);
       targetIds.push(opponent.playerId);
       
       // Смерть противника = Победа в раунде
@@ -125,10 +130,10 @@ io.on("connection", (socket) => {
       }
     } 
     // Логика Хилла (Лечения)
-    else if (trigger.action === "heal") {
+    else if (eventType === "heal") {
       const self = room.players[senderId];
       if (self && self.alive) {
-         self.hp = Math.min(self.maxHp, self.hp + (trigger.amount * payload.count));
+         self.hp = Math.min(self.maxHp, self.hp + amount);
          targetIds.push(self.playerId);
       }
     }
@@ -136,7 +141,7 @@ io.on("connection", (socket) => {
     // Рассылка визуального уведомления в Overlay HUD
     io.to(socket.roomId).emit("game_event", {
        type: eventType,
-       amount: trigger.amount * payload.count,
+       amount: amount,
        targetPlayerIds: targetIds,
        sourcePlayerId: senderId,
        viewer: payload.viewer,
