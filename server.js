@@ -153,16 +153,28 @@ function processGift(room, sourcePlayerId, gift) {
   const source = room.players.get(sourcePlayerId);
   if (!source || !source.alive || !source.connected) return;
 
-  const trigger = room.rules.triggers.find(t => t.giftIds.includes(gift.giftId));
-  if (!trigger) return;
-
   const meta = { viewer: gift.viewer, viewerAvatar: gift.viewerAvatar, giftIcon: gift.giftIcon };
   
-  if (trigger.action === 'damage') {
-    const opponents = getOpponents(room, source.playerId);
-    opponents.forEach(t => applyDamage(room, t, trigger.amount, meta));
-  } else if (trigger.action === 'heal') {
-    applyHeal(room, source, trigger.amount, meta);
+  // Ищем подарок в Триггерах
+  const trigger = room.rules.triggers.find(t => t.giftIds.includes(gift.giftId));
+  
+  if (trigger) {
+    // Если подарок есть в триггерах, используем правило триггера
+    if (trigger.action === 'damage') {
+      const opponents = getOpponents(room, source.playerId);
+      opponents.forEach(t => applyDamage(room, t, trigger.amount, meta));
+    } else if (trigger.action === 'heal') {
+      applyHeal(room, source, trigger.amount, meta);
+    }
+  } else {
+    // Если подарка нет в триггерах, наносим урон в размере стоимости подарка (totalCoins)
+    const defaultDamage = gift.totalCoins || 0;
+    
+    // Игнорируем бесплатные подарки (розочки без стоимости и т.д.)
+    if (defaultDamage > 0) {
+      const opponents = getOpponents(room, source.playerId);
+      opponents.forEach(t => applyDamage(room, t, defaultDamage, meta));
+    }
   }
 
   checkVictory(room);
