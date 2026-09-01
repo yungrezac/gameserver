@@ -17,7 +17,7 @@ io.on("connection", (socket) => {
       roomId,
       hostPlayerId: player.playerId,
       phase: "waiting", // Возможные фазы: waiting, countdown, playing, round_won, match_won
-      rules: rules || { startHp: 100, maxHp: 100, targetWins: 3, triggers: [] },
+      rules: rules || { startHp: 100, maxHp: 100, targetWins: 3, breakDuration: 10, triggers: [] },
       players: {
         [player.playerId]: { ...player, hp: rules?.startHp || 100, maxHp: rules?.maxHp || 100, wins: 0, alive: true }
       },
@@ -69,7 +69,8 @@ io.on("connection", (socket) => {
     });
     
     room.phase = "countdown";
-    room.countdownUntil = Date.now() + 20000; // 20 секунд обратного отсчета
+    const COUNTDOWN_TIME = 10000; // 10 секунд обратного отсчета
+    room.countdownUntil = Date.now() + COUNTDOWN_TIME; 
     io.to(socket.roomId).emit("room_snapshot", room);
 
     // Автоматический перевод в активную фазу
@@ -78,7 +79,7 @@ io.on("connection", (socket) => {
         rooms[socket.roomId].phase = "playing";
         io.to(socket.roomId).emit("room_snapshot", rooms[socket.roomId]);
       }
-    }, 20000);
+    }, COUNTDOWN_TIME);
   });
 
   socket.on("reset_battle", () => {
