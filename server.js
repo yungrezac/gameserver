@@ -138,6 +138,7 @@ io.on("connection", (socket) => {
        type: eventType,
        amount: trigger.amount * payload.count,
        targetPlayerIds: targetIds,
+       sourcePlayerId: senderId,
        viewer: payload.viewer,
        viewerAvatar: payload.viewerAvatar,
        giftIcon: payload.giftIcon,
